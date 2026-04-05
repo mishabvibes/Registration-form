@@ -1,0 +1,139 @@
+@font-face {
+  font-family: 'Majalla';
+  src: url('/fonts/majalla-reguler.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Majalla';
+  src: url('/fonts/majalla-bold.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+}
+
+:root {
+  --primary-color: #f7931e;
+  --bg-color: #333;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-color);
+  font-family: 'Majalla', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  direction: rtl; /* Right to left for Arabic */
+  min-height: 100vh;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.app-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.paper {
+  background-image: url('/image/FormFrame.jpeg');
+  background-size: 100% 100%;
+  background-position: top center;
+  background-repeat: no-repeat;
+  position: relative;
+  width: 210mm;
+  height: 297mm; /* Standard A4 aspect ratio */
+  background-color: white;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  margin-bottom: 30px;
+}
+
+.form-overlay-input {
+  position: absolute;
+  background-color: rgba(247, 147, 30, 0.1); /* Slightly visible orange in dev for easy placement */
+  border: 1px dashed rgba(247, 147, 30, 0.5);
+  font-family: 'Majalla';
+  font-size: 1.5rem;
+  font-weight: bold;
+  padding: 2px 10px;
+  color: #000;
+  outline: none;
+  direction: rtl;
+}
+
+.form-overlay-input:focus {
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 1px solid #000;
+}
+
+.actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-bottom: 40px;
+}
+
+.btn {
+  padding: 12px 30px;
+  font-family: inherit;
+  font-size: 1.3rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #e08215;
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #3e8e41;
+  transform: translateY(-2px);
+}
+
+@media print {
+  body {
+    background-color: transparent;
+    padding: 0;
+  }
+  
+  .actions {
+    display: none !important;
+  }
+  
+  .paper {
+    box-shadow: none;
+    margin: 0;
+    /* Ensure the background image prints */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .form-overlay-input {
+    background-color: transparent !important;
+    border: none !important;
+  }
+}
