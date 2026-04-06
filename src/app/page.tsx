@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Download, Printer, Save, Settings } from 'lucide-react';
+import { Download, Printer, Save, Settings, CheckCircle } from 'lucide-react';
 import { DEFAULT_FIELDS, FieldDef } from '@/lib/fieldDefs';
 
 function hexToRgba(hex: string, opacity: number) {
@@ -18,6 +18,7 @@ export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState('');
   const [fields, setFields] = useState<FieldDef[]>([...DEFAULT_FIELDS]);
+  const [formData, setFormData] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetch('/api/field-config')
@@ -29,8 +30,6 @@ export default function Home() {
       })
       .catch(() => {});
   }, []);
-
-  const [formData, setFormData] = useState<Record<string, string>>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -44,15 +43,11 @@ export default function Home() {
     const element = formRef.current;
     if (!element) return;
 
-    // Dynamically import both libraries
     const [{ jsPDF }, html2canvas] = await Promise.all([
       import('jspdf'),
       import('html2canvas').then(m => m.default),
     ]);
 
-    // ── Layer 1: Original image at full resolution ──────────────────────────
-    // Fetch the source image and embed it directly in the PDF
-    // This preserves 100% original quality — no canvas rasterization
     const imgRes  = await fetch('/image/FormFrame.jpeg');
     const imgBlob = await imgRes.blob();
     const imgBase64 = await new Promise<string>((resolve) => {
@@ -62,25 +57,25 @@ export default function Home() {
     });
 
     const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-    pdf.addImage(imgBase64, 'JPEG', 0, 0, 210, 297);
+    
+    // Add original background image with 0 compression (alias: 'FAST' usually preserves best)
+    pdf.addImage(imgBase64, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
 
-    // ── Layer 2: Text-only overlay ──────────────────────────────────────────
-    // Capture just the input text at high scale with transparent background
     element.classList.add('pdf-mode');
 
+    // Use higher scale and explicit DPI for razor-sharp text
     const canvas = await html2canvas(element, {
-      scale: 4,                  // high DPI for crisp text
+      scale: 4,                  // Captures at 384 DPI (4 * 96)
       useCORS: true,
-      backgroundColor: null,     // transparent — only text renders
+      backgroundColor: null,     // Transparent background
       logging: false,
-      imageTimeout: 0,
     });
 
     element.classList.remove('pdf-mode');
 
-    // Add text layer on top of the background image
-    const textData = canvas.toDataURL('image/png');
-    pdf.addImage(textData, 'PNG', 0, 0, 210, 297);
+    // Add high-resolution text layer on top
+    const textData = canvas.toDataURL('image/png', 1.0);
+    pdf.addImage(textData, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
 
     pdf.save(`Registration_${formData['studentName'] || 'Form'}.pdf`);
   };
@@ -95,9 +90,13 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-      const data = await res.json();
-      if (res.ok) setSuccess('تم حفظ البيانات بنجاح!');
-      else alert(data.message || 'حدث خطأ أثناء الحفظ');
+      if (res.ok) {
+        setSuccess('تم حفظ البيانات بنجاح!');
+        setTimeout(() => setSuccess(''), 5000);
+      } else {
+        const data = await res.json();
+        alert(data.message || 'حدث خطأ أثناء الحفظ');
+      }
     } catch {
       alert('حدث خطأ في الاتصال بالخادم');
     } finally {
@@ -131,62 +130,115 @@ export default function Home() {
 
   return (
     <div className="app-container">
-      {success && (
-        <div style={{ backgroundColor: '#d4edda', color: '#155724', padding: '14px', borderRadius: '6px', marginBottom: '16px', textAlign: 'center', fontWeight: 'bold' }}>
-          {success}
-        </div>
-      )}
+      <header className="page-header">
+        <h1>استمارة التسجيل</h1>
+        <p>يرجى ملء البيانات المطلوبة بعناية</p>
+        {success && (
+          <div className="success-banner" style={{ 
+            background: 'rgba(34, 197, 94, 0.2)', 
+            border: '1px solid #22c55e', 
+            color: '#22c55e', 
+            padding: '1rem', 
+            borderRadius: '12px', 
+            marginTop: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '10px'
+          }}>
+            <CheckCircle size={20} />
+            {success}
+          </div>
+        )}
+      </header>
 
-      <form onSubmit={handleSubmit}>
-        <div className="paper" ref={formRef}>
-          {fields.map(field => {
-            const style = inputStyle(field);
-            if (field.type === 'textarea') {
+      <form onSubmit={handleSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        
+        {/* MOBILE VIEW: Clean Form Cards */}
+        <div className="mobile-view">
+          <div className="form-card">
+            {fields.map(field => (
+              <div key={field.id} className="mobile-field">
+                <label htmlFor={`mobile-${field.id}`}>{field.label}</label>
+                {field.type === 'textarea' ? (
+                  <textarea
+                    id={`mobile-${field.id}`}
+                    className="mobile-input mobile-textarea"
+                    name={field.id}
+                    value={formData[field.id] ?? ''}
+                    onChange={handleChange}
+                    placeholder={field.placeholder || field.label}
+                  />
+                ) : (
+                  <input
+                    id={`mobile-${field.id}`}
+                    type={field.type}
+                    className="mobile-input"
+                    name={field.id}
+                    value={formData[field.id] ?? ''}
+                    onChange={handleChange}
+                    placeholder={field.placeholder || field.label}
+                    dir={field.dir}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* DESKTOP VIEW: A4 Paper Preview */}
+        <div className="desktop-view">
+          <div className="paper" ref={formRef}>
+            {fields.map(field => {
+              const style = inputStyle(field);
+              if (field.type === 'textarea') {
+                return (
+                  <textarea
+                    key={field.id}
+                    name={field.id}
+                    value={formData[field.id] ?? ''}
+                    onChange={handleChange}
+                    placeholder={field.placeholder}
+                    style={style}
+                  />
+                );
+              }
               return (
-                <textarea
+                <input
                   key={field.id}
+                  type={field.type}
                   name={field.id}
                   value={formData[field.id] ?? ''}
                   onChange={handleChange}
                   placeholder={field.placeholder}
+                  dir={field.dir}
                   style={style}
                 />
               );
-            }
-            return (
-              <input
-                key={field.id}
-                type={field.type}
-                name={field.id}
-                value={formData[field.id] ?? ''}
-                onChange={handleChange}
-                placeholder={field.placeholder}
-                dir={field.dir}
-                style={style}
-              />
-            );
-          })}
+            })}
+          </div>
         </div>
 
+        {/* ACTIONS BAR: Responsive (Sticky on Mobile) */}
         <div className="actions">
           <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
             <Save size={18} />
-            {isSubmitting ? 'جاري الحفظ...' : 'حفظ البيانات'}
+            <span>{isSubmitting ? 'جاري الحفظ...' : 'حفظ'}</span>
           </button>
 
-          <Link href="/dashboard" className="btn btn-primary" style={{ backgroundColor: '#6366f1', textDecoration: 'none' }}>
+          <Link href="/dashboard" className="btn btn-accent" style={{ textDecoration: 'none' }}>
             <Settings size={18} />
-            لوحة التحكم
+            <span>الإعدادات</span>
           </Link>
 
           <button type="button" onClick={handlePrint} className="btn btn-secondary">
             <Printer size={18} />
-            طباعة
+            <span>طباعة</span>
           </button>
 
-          <button type="button" onClick={handleDownloadPDF} className="btn btn-primary" style={{ backgroundColor: '#E3342F' }}>
+          <button type="button" onClick={handleDownloadPDF} className="btn btn-danger">
             <Download size={18} />
-            تحميل PDF
+            <span>PDF</span>
           </button>
         </div>
       </form>

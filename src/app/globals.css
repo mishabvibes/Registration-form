@@ -13,8 +13,16 @@
 }
 
 :root {
-  --primary-color: #f7931e;
-  --bg-color: #333;
+  --primary: #f7931e;
+  --primary-hover: #e08215;
+  --secondary: #6366f1;
+  --bg-dark: #0f172a;
+  --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  --glass: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3);
 }
 
 * {
@@ -24,22 +32,51 @@
 }
 
 body {
-  background-color: var(--bg-color);
+  background: var(--bg-gradient);
+  color: var(--text-main);
   font-family: 'Majalla', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  direction: rtl; /* Right to left for Arabic */
+  direction: rtl;
   min-height: 100vh;
-  padding: 2rem;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
   align-items: center;
+  overflow-x: hidden;
 }
+
+/* ── Container Logic ────────────────────────────────────────────────────── */
 
 .app-container {
   width: 100%;
+  max-width: 1200px;
+  padding: 2rem 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.page-header h1 {
+  font-size: 2.5rem;
+  font-weight: bold;
+  background: linear-gradient(to right, #f7931e, #fbbf24);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.5rem;
+}
+
+.page-header p {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+/* ── Desktop/Tablet View (Paper) ───────────────────────────────────────── */
+
+.desktop-view {
+  display: block;
 }
 
 .paper {
@@ -49,109 +86,190 @@ body {
   background-repeat: no-repeat;
   position: relative;
   width: 210mm;
-  height: 297mm; /* Standard A4 aspect ratio */
+  height: 297mm;
   background-color: white;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  margin-bottom: 30px;
+  box-shadow: var(--shadow-xl);
+  margin-bottom: 3rem;
+  border-radius: 4px;
 }
 
-.form-overlay-input {
-  position: absolute;
-  background-color: rgba(247, 147, 30, 0.1); /* Slightly visible orange in dev for easy placement */
-  border: 1px dashed rgba(247, 147, 30, 0.5);
-  font-family: 'Majalla';
-  font-size: 1.5rem;
+/* Scale down the paper on smaller desktop screens */
+@media (max-width: 900px) {
+  .desktop-view {
+    transform: scale(0.8);
+    transform-origin: top center;
+    margin-bottom: -10rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .desktop-view {
+    display: none; /* Hide A4 preview on mobile */
+  }
+}
+
+/* ── Mobile Form View ──────────────────────────────────────────────────── */
+
+.mobile-view {
+  display: none;
+  width: 100%;
+  max-width: 600px;
+}
+
+@media (max-width: 768px) {
+  .mobile-view {
+    display: block;
+  }
+}
+
+.form-card {
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-xl);
+  margin-bottom: 6rem; /* Extra space for sticky bar */
+}
+
+.mobile-field {
+  margin-bottom: 1.5rem;
+}
+
+.mobile-field label {
+  display: block;
+  font-size: 1rem;
+  color: var(--primary);
+  margin-bottom: 0.5rem;
   font-weight: bold;
-  padding: 2px 10px;
-  color: #000;
-  outline: none;
-  direction: rtl;
 }
 
-.form-overlay-input:focus {
-  background-color: rgba(255, 255, 255, 0.8);
-  border: 1px solid #000;
+.mobile-input {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: white;
+  font-size: 1.2rem;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+.mobile-input:focus {
+  border-color: var(--primary);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 0 4px rgba(247, 147, 30, 0.2);
+}
+
+.mobile-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* ── Actions Bar ──────────────────────────────────────────────────────── */
 
 .actions {
   display: flex;
-  gap: 15px;
+  gap: 1rem;
   justify-content: center;
-  margin-bottom: 40px;
+  flex-wrap: wrap;
+  width: 100%;
+  position: relative;
+  z-index: 50;
+}
+
+@media (max-width: 768px) {
+  .actions {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 1rem;
+    border-top: 1px solid var(--glass-border);
+    justify-content: space-around;
+    gap: 0.5rem;
+  }
 }
 
 .btn {
-  padding: 12px 30px;
+  padding: 0.8rem 1.5rem;
   font-family: inherit;
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   font-weight: bold;
   border: none;
-  border-radius: 5px;
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   gap: 8px;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .btn {
+    padding: 0.8rem 1rem;
+    font-size: 0.9rem;
+    flex: 1;
+    justify-content: center;
+  }
 }
 
 .btn-primary {
-  background-color: var(--primary-color);
+  background: var(--primary);
   color: white;
+  box-shadow: 0 4px 14px 0 rgba(247, 147, 30, 0.39);
 }
 
-.btn-primary:hover {
-  background-color: #e08215;
-  transform: translateY(-2px);
+.btn-primary:active {
+  transform: scale(0.95);
 }
 
 .btn-secondary {
-  background-color: #4CAF50;
+  background: #22c55e;
   color: white;
+  box-shadow: 0 4px 14px 0 rgba(34, 197, 94, 0.39);
 }
 
-.btn-secondary:hover {
-  background-color: #3e8e41;
-  transform: translateY(-2px);
+.btn-accent {
+  background: var(--secondary);
+  color: white;
+  box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.39);
 }
+
+.btn-danger {
+  background: #ef4444;
+  color: white;
+  box-shadow: 0 4px 14px 0 rgba(239, 68, 68, 0.39);
+}
+
+/* ── Print/PDF Modes ───────────────────────────────────────────────────── */
 
 @media print {
-  body {
-    background-color: transparent;
-    padding: 0;
-  }
-  
-  .actions {
-    display: none !important;
-  }
-  
-  .paper {
-    box-shadow: none;
-    margin: 0;
-    /* Ensure the background image prints */
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
-  .form-overlay-input {
-    background-color: transparent !important;
-    border: none !important;
-  }
+  body { background: white !important; }
+  .actions, .page-header, .mobile-view { display: none !important; }
+  .desktop-view { display: block !important; transform: none !important; margin: 0 !important; }
+  .paper { box-shadow: none !important; margin: 0 !important; -webkit-print-color-adjust: exact; }
 }
 
-/* ── PDF capture mode ──────────────────────────────────────────────────────
-   Applied programmatically before html2pdf captures the DOM.
-   Hides all input chrome — only the user's typed text appears in the PDF.
-──────────────────────────────────────────────────────────────────────────── */
-.pdf-mode {
-  box-shadow: none !important;
-}
-
-.pdf-mode input,
-.pdf-mode textarea {
+.pdf-mode { 
+  box-shadow: none !important; 
   background: transparent !important;
-  background-color: transparent !important;
+}
+.paper.pdf-mode {
+  background-image: none !important;
+  background: transparent !important;
+}
+.pdf-mode input, .pdf-mode textarea {
+  background: transparent !important;
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
-  -webkit-text-fill-color: currentColor; /* prevents Safari from graying out disabled/readonly inputs */
+  -webkit-text-fill-color: currentColor;
 }
